@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lab 1 — CMYK ↔ RGB ↔ HLS</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #eef0f4;
+    margin: 0;
+    padding: 36px 40px 48px;
+    color: #1c1c1e;
+    font-size: 17px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 26px;
+    text-align: center;
+    letter-spacing: .2px;
+  }
+
+  .wrap { max-width: 1600px; margin: 0 auto; }
+
+  .topbar {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px 26px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: stretch;
+    gap: 22px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 900px) {
+    .topbar { grid-template-columns: 1fr; }
+  }
+
+  .picker-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .picker-block input[type=color] {
+    width: 110px; height: 110px;
+    border: none; background: none; cursor: pointer;
+    padding: 0;
+    border-radius: 14px;
+  }
+  .picker-block input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  .picker-block input[type=color]::-webkit-color-swatch {
+    border: 1px solid #e0e0e0; border-radius: 14px;
+  }
+  .picker-block span {
+    font-size: 14px; color: #6b6b70; letter-spacing: .3px;
+  }
+
+  .preview-bar {
+    border-radius: 14px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    min-height: 110px;
+  }
+
+  .hex-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
+  .hex-block label {
+    font-size: 14px; color: #6b6b70; letter-spacing: .3px;
+  }
+  .hex-block input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 22px;
+    padding: 14px 16px;
+    border: 2px solid #dcdee3;
+    border-radius: 12px;
+    width: 200px;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .hex-block input:focus { border-color: #1e88e5; }
+
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+  @media (max-width: 1000px) {
+    .columns { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 26px 28px 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  }
+  .card h2 {
+    font-size: 19px;
+    margin: 0 0 22px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #3a3a40;
+    text-align: center;
+    font-weight: 700;
+  }
+  .card h2 small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    letter-spacing: .5px;
+    color: #a0a0a6;
+    font-weight: 500;
+    text-transform: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 42px 1fr 92px;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .row label {
+    font-weight: 700;
+    font-size: 18px;
+    text-align: center;
+  }
+  .row input[type=number] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #dcdee3;
+    border-radius: 10px;
+    font-size: 17px;
+    text-align: center;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .row input[type=number]:focus { border-color: #1e88e5; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    background: transparent;
+    cursor: pointer;
+    outline: none;
+    --pct: 0%;
+    --dot: #888;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 6px;
+    background:
+      linear-gradient(
+        to right,
+        var(--dot) 0,
+        var(--dot) var(--pct),
+        #ececf0 var(--pct),
+        #ececf0 100%
+      );
+  }
+  input[type=range]::-moz-range-track {
+    height: 8px;
+    border-radius: 6px;
+    background: #ececf0;
+  }
+  input[type=range]::-moz-range-progress {
+    height: 8px;
+    border-radius: 6px;
+    background: var(--dot);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--dot);
+    margin-top: -9px;
+    border: 3px solid #fff;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,.08),
+      0 0 0 6px color-mix(in srgb, var(--dot) 22%, transparent),
+      0 2px 6px rgba(0,0,0,.18);
+    transition: transform .12s, box-shadow .12s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,.08),
+      0 0 0 9px color-mix(in srgb, var(--dot) 26%, transparent),
+      0 3px 8px rgba(0,0,0,.22);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--dot);
+    border: 3px solid #fff;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,.08),
+      0 0 0 6px color-mix(in srgb, var(--dot) 22%, transparent),
+      0 2px 6px rgba(0,0,0,.18);
+  }
+
+  #rRange { --dot: #e53935; }
+  #gRange { --dot: #43a047; }
+  #bRange { --dot: #1e88e5; }
+
+  #cRange { --dot: #00acc1; }
+  #mRange { --dot: #d81b60; }
+  #yRange { --dot: #fdd835; }
+  #kRange { --dot: #424242; }
+
+  #hRange { --dot: #7e57c2; }
+  #lRange { --dot: #90a4ae; }
+  #sRange { --dot: #ff7043; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <h1>Color Models: CMYK ↔ RGB ↔ HLS</h1>
+
+  <div class="topbar">
+
+    <div class="picker-block">
+      <input type="color" id="picker" value="#ffffff">
+      <span>Palette</span>
+    </div>
+
+    <div class="preview-bar" id="previewBar"></div>
+
+    <div class="hex-block">
+      <label>HEX</label>
+      <input type="text" id="hexInput" value="#FFFFFF" maxlength="7">
+    </div>
+
+  </div>
+
+  <div class="columns">
+
+    <div class="card">
+      <h2>RGB <small>R, G, B: 0 ↔ 255</small></h2>
+      <div class="row"><label>R</label><input type="range" id="rRange" min="0" max="255" value="255"><input type="number" id="rNum" min="0" max="255" value="255"></div>
+      <div class="row"><label>G</label><input type="range" id="gRange" min="0" max="255" value="255"><input type="number" id="gNum" min="0" max="255" value="255"></div>
+      <div class="row"><label>B</label><input type="range" id="bRange" min="0" max="255" value="255"><input type="number" id="bNum" min="0" max="255" value="255"></div>
+    </div>
+
+    <div class="card">
+      <h2>CMYK <small>C, M, Y, K: 0% ↔ 100%</small></h2>
+      <div class="row"><label>C</label><input type="range" id="cRange" min="0" max="100" value="0"><input type="number" id="cNum" min="0" max="100" value="0"></div>
+      <div class="row"><label>M</label><input type="range" id="mRange" min="0" max="100" value="0"><input type="number" id="mNum" min="0" max="100" value="0"></div>
+      <div class="row"><label>Y</label><input type="range" id="yRange" min="0" max="100" value="0"><input type="number" id="yNum" min="0" max="100" value="0"></div>
+      <div class="row"><label>K</label><input type="range" id="kRange" min="0" max="100" value="0"><input type="number" id="kNum" min="0" max="100" value="0"></div>
+    </div>
+
+    <div class="card">
+      <h2>HLS <small>H: 0° ↔ 360°, L, S: 0% ↔ 100%</small></h2>
+      <div class="row"><label>H</label><input type="range" id="hRange" min="0" max="360" value="0"><input type="number" id="hNum" min="0" max="360" value="0"></div>
+      <div class="row"><label>L</label><input type="range" id="lRange" min="0" max="100" value="100"><input type="number" id="lNum" min="0" max="100" value="100"></div>
+      <div class="row"><label>S</label><input type="range" id="sRange" min="0" max="100" value="0"><input type="number" id="sNum" min="0" max="100" value="0"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+const state = { r: 255, g: 255, b: 255 };
+
+const $ = id => document.getElementById(id);
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+const rgbToHex = (r, g, b) =>
+  '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+function hexToRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+function rgbToCmyk(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const k = 1 - Math.max(r, g, b);
+  if (k === 1) return { c: 0, m: 0, y: 0, k: 100 };
+  return {
+    c: Math.round(((1 - r - k) / (1 - k)) * 100),
+    m: Math.round(((1 - g - k) / (1 - k)) * 100),
+    y: Math.round(((1 - b - k) / (1 - k)) * 100),
+    k: Math.round(k * 100)
+  };
+}
+
+function cmykToRgb(c, m, y, k) {
+  c /= 100; m /= 100; y /= 100; k /= 100;
+  return {
+    r: Math.round(255 * (1 - c) * (1 - k)),
+    g: Math.round(255 * (1 - m) * (1 - k)),
+    b: Math.round(255 * (1 - y) * (1 - k))
+  };
+}
+
+function rgbToHls(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0, s = 0;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+  }
+  return { h: Math.round(h), l: Math.round(l * 100), s: Math.round(s * 100) };
+}
+
+function hlsToRgb(h, l, s) {
+  h /= 360; l /= 100; s /= 100;
+
+  if (s === 0) {
+    const v = Math.round(l * 255);
+    return { r: v, g: v, b: v };
+  }
+
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+
+  return {
+    r: Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
+    g: Math.round(hue2rgb(p, q, h) * 255),
+    b: Math.round(hue2rgb(p, q, h - 1 / 3) * 255)
+  };
+}
+
+function fillRange(el) {
+  const min = +el.min;
+  const max = +el.max;
+  const val = +el.value;
+  const pct = max === min ? 0 : ((val - min) / (max - min)) * 100;
+  el.style.setProperty('--pct', pct + '%');
+}
+
+function render() {
+  const { r, g, b } = state;
+
+  $('rRange').value = r; $('rNum').value = r; fillRange($('rRange'));
+  $('gRange').value = g; $('gNum').value = g; fillRange($('gRange'));
+  $('bRange').value = b; $('bNum').value = b; fillRange($('bRange'));
+
+  const cmyk = rgbToCmyk(r, g, b);
+  $('cRange').value = cmyk.c; $('cNum').value = cmyk.c; fillRange($('cRange'));
+  $('mRange').value = cmyk.m; $('mNum').value = cmyk.m; fillRange($('mRange'));
+  $('yRange').value = cmyk.y; $('yNum').value = cmyk.y; fillRange($('yRange'));
+  $('kRange').value = cmyk.k; $('kNum').value = cmyk.k; fillRange($('kRange'));
+
+  const hls = rgbToHls(r, g, b);
+  $('hRange').value = hls.h; $('hNum').value = hls.h; fillRange($('hRange'));
+  $('lRange').value = hls.l; $('lNum').value = hls.l; fillRange($('lRange'));
+  $('sRange').value = hls.s; $('sNum').value = hls.s; fillRange($('sRange'));
+
+  const hex = rgbToHex(r, g, b);
+  if (document.activeElement !== $('hexInput')) $('hexInput').value = hex;
+  $('previewBar').style.background = hex;
+  $('picker').value = hex.toLowerCase();
+}
+
+['r', 'g', 'b'].forEach(ch => {
+  $(ch + 'Range').addEventListener('input', e => {
+    state[ch] = clamp(+e.target.value, 0, 255);
+    render();
+  });
+  $(ch + 'Num').addEventListener('input', e => {
+    state[ch] = clamp(+e.target.value || 0, 0, 255);
+    render();
+  });
+});
+
+['c', 'm', 'y', 'k'].forEach(ch => {
+  const handler = e => {
+    const v = clamp(+e.target.value || 0, 0, 100);
+    const cur = rgbToCmyk(state.r, state.g, state.b);
+    cur[ch] = v;
+    const rgb = cmykToRgb(cur.c, cur.m, cur.y, cur.k);
+    state.r = rgb.r; state.g = rgb.g; state.b = rgb.b;
+    render();
+  };
+  $(ch + 'Range').addEventListener('input', handler);
+  $(ch + 'Num').addEventListener('input', handler);
+});
+
+['h', 'l', 's'].forEach(ch => {
+  const handler = e => {
+    const max = ch === 'h' ? 360 : 100;
+    const v = clamp(+e.target.value || 0, 0, max);
+    const cur = rgbToHls(state.r, state.g, state.b);
+    cur[ch] = v;
+    const rgb = hlsToRgb(cur.h, cur.l, cur.s);
+    state.r = rgb.r; state.g = rgb.g; state.b = rgb.b;
+    render();
+  };
+  $(ch + 'Range').addEventListener('input', handler);
+  $(ch + 'Num').addEventListener('input', handler);
+});
+
+$('picker').addEventListener('input', e => {
+  const rgb = hexToRgb(e.target.value);
+  if (!rgb) return;
+  state.r = rgb.r; state.g = rgb.g; state.b = rgb.b;
+  render();
+});
+
+$('hexInput').addEventListener('input', e => {
+  const rgb = hexToRgb(e.target.value);
+  if (!rgb) return;
+  state.r = rgb.r; state.g = rgb.g; state.b = rgb.b;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
