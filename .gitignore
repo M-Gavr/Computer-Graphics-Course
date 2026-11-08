@@ -1,0 +1,28 @@
+cat > .gitignore << 'EOF'
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Временные файлы LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+EOF
